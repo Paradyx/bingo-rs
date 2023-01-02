@@ -30,7 +30,9 @@ fn main() -> std::io::Result<()> {
              .value_parser(value_parser!(PathBuf))
              )
         .arg(arg!(-c --center <TEXT> "replace center cell with custom text"))
-        .arg(arg!(-d --default <TEXT> "default name, if list runs out of names"))
+        .arg(arg!(--default <TEXT> "default name, if list runs out of names (default: Joker"))
+        .arg(arg!(-t --title <TEXT> "the title (default: Bingo)"))
+        .arg(arg!(-d --description <TEXT> "some explanations at the bottom"))
         .get_matches();
 
     let mut names: Vec<String> = if let Some(path) = matches.get_one::<PathBuf>("file") {
@@ -52,8 +54,11 @@ fn main() -> std::io::Result<()> {
     let mut rng = thread_rng();
     names.as_mut_slice().shuffle(&mut rng);
 
+    let fallback_title = String::from("Bingo");
     let fallback_name = String::from("Joker");
-    let default_name = matches.get_one::<String>("default").unwrap_or(&fallback_name);
+    let default_name = matches
+        .get_one::<String>("default")
+        .unwrap_or(&fallback_name);
     let default_iter = repeat(default_name);
 
     let mut bingo = Container::new(ContainerType::Div).with_attributes([("class", "bingo-grid")]);
@@ -84,6 +89,10 @@ fn main() -> std::io::Result<()> {
     margin: 0;
 }}
 
+h1 {{
+    text-align: center;
+}}
+
 .bingo-grid {{ 
     margin: 1em;
     display: grid;
@@ -100,13 +109,33 @@ fn main() -> std::io::Result<()> {
     justify-content: center;
 }}
 
-.center-cell {{ background-color: red; }}
-.normal-cell {{ background-color: lightgrey; }}
+.center-cell {{ background-color: red; text-align: center;}}
+.normal-cell {{ background-color: lightgrey; text-align: center;}}
 ",
             width, height
         ))
-        .with_container(bingo);
-    
+        .with_title(
+            matches
+                .get_one::<String>("title")
+                .unwrap_or(&fallback_title),
+        )
+        .with_header(
+            1,
+            matches
+                .get_one::<String>("title")
+                .unwrap_or(&fallback_title),
+        )
+        .with_container(bingo)
+        .with_container(
+            Container::new(ContainerType::Div)
+                .with_attributes([("class", "bingo-description")])
+                .with_paragraph(
+                    matches
+                        .get_one::<String>("description")
+                        .unwrap_or(&String::from("")),
+                ),
+        );
+
     let mut out: Box<dyn Write> = if let Some(outpath) = matches.get_one::<PathBuf>("output") {
         Box::new(File::create(outpath)?)
     } else {
