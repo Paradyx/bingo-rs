@@ -75,6 +75,7 @@ h1 {{
     display: flex;
     align-items: center;
     justify-content: center;
+    overflow: hidden;
 }}
 
 .center-cell {{ background-color: red; text-align: center;}}
